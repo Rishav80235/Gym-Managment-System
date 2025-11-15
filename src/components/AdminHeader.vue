@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { clearSession } from '../utils/auth'
+import { clearSession, getSession } from '../utils/auth'
 
 const isMenuOpen = ref(false)
 const profileRef = ref<HTMLElement | null>(null)
 const menuRef = ref<HTMLElement | null>(null)
 
 const router = useRouter()
+
+// Get current session to check user role
+const session = computed(() => getSession())
+const isAdmin = computed(() => session.value?.role === 'admin')
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -67,7 +71,7 @@ onUnmounted(() => {
       <img class="logo" src="/favicon.ico" alt="Logo" />
       <h1 class="title">Admin Panel</h1>
     </div>
-    <div class="center">
+    <div v-if="isAdmin" class="center">
       <button class="switch-btn" type="button" @click="goToAdmin">Admin</button>
       <button class="switch-btn" type="button" @click="goToMember">Member</button>
       <button class="switch-btn" type="button" @click="goToUser">User</button>

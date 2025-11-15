@@ -10,6 +10,7 @@ import MonthlyNotifications from '../views/MonthlyNotifications.vue'
 import ReportExport from '../views/ReportExport.vue'
 import SupplementStore from '../views/SupplementStore.vue'
 import DietDetails from '../views/DietDetails.vue'
+import PendingRegistrations from '../views/PendingRegistrations.vue'
 import MemberDashboard from '../views/MemberDashboard.vue'
 import MemberBillReceipts from '../views/MemberBillReceipts.vue'
 import MemberBillNotifications from '../views/MemberBillNotifications.vue'
@@ -81,6 +82,12 @@ const router = createRouter({
           path: 'diet-details',
           name: 'diet-details',
           component: DietDetails,
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'pending-registrations',
+          name: 'pending-registrations',
+          component: PendingRegistrations,
           meta: { requiresAuth: true },
         },
         {

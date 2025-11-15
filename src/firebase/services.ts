@@ -3,6 +3,7 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   doc,
   updateDoc,
   deleteDoc,
@@ -983,6 +984,173 @@ export const dietPlanService = {
       await deleteDoc(planRef)
     } catch (error) {
       console.error('Error deleting diet plan:', error)
+      throw error
+    }
+  },
+}
+
+// Registration Request interface
+export interface RegistrationRequest {
+  id?: string
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  role: 'member' | 'user'
+  status: 'Pending' | 'Approved' | 'Rejected'
+  requestedAt?: Timestamp
+  reviewedAt?: Timestamp
+  reviewedBy?: string
+  rejectionReason?: string
+}
+
+// Registration Request Service
+export const registrationRequestService = {
+  // Create a registration request
+  async createRequest(
+    requestData: Omit<
+      RegistrationRequest,
+      'id' | 'status' | 'requestedAt' | 'reviewedAt' | 'reviewedBy'
+    >,
+  ): Promise<string> {
+    try {
+      const requestWithTimestamp = {
+        ...requestData,
+        status: 'Pending' as const,
+        requestedAt: Timestamp.now(),
+      }
+      const docRef = await addDoc(collection(db, 'registrationRequests'), requestWithTimestamp)
+
+      // Create a notification for admin
+      try {
+        const today = new Date().toISOString().split('T')[0] || ''
+        const currentTime = new Date().toTimeString().slice(0, 5)
+        await notificationService.createNotification({
+          title: 'New Registration Request',
+          message: `A new ${requestData.role} registration request has been submitted by ${requestData.firstName} ${requestData.lastName} (${requestData.email}). Please review and approve or reject the request.`,
+          type: 'General',
+          targetType: 'All Members', // This will be visible to admin
+          scheduledDate: today,
+          sendTime: currentTime,
+          isRecurring: false,
+        })
+      } catch (notifError) {
+        // Don't fail the request creation if notification fails
+        console.error('Error creating notification for registration request:', notifError)
+      }
+
+      return docRef.id
+    } catch (error) {
+      console.error('Error creating registration request:', error)
+      throw error
+    }
+  },
+
+  // Get all registration requests
+  async getAllRequests(): Promise<RegistrationRequest[]> {
+    try {
+      const q = query(collection(db, 'registrationRequests'), orderBy('requestedAt', 'desc'))
+      const querySnapshot = await getDocs(q)
+      const requests: RegistrationRequest[] = []
+      querySnapshot.forEach((doc) => {
+        requests.push({
+          id: doc.id,
+          ...doc.data(),
+        } as RegistrationRequest)
+      })
+      return requests
+    } catch (error) {
+      console.error('Error getting registration requests:', error)
+      throw error
+    }
+  },
+
+  // Get pending registration requests
+  async getPendingRequests(): Promise<RegistrationRequest[]> {
+    try {
+      const q = query(
+        collection(db, 'registrationRequests'),
+        where('status', '==', 'Pending'),
+        orderBy('requestedAt', 'desc'),
+      )
+      const querySnapshot = await getDocs(q)
+      const requests: RegistrationRequest[] = []
+      querySnapshot.forEach((doc) => {
+        requests.push({
+          id: doc.id,
+          ...doc.data(),
+        } as RegistrationRequest)
+      })
+      return requests
+    } catch (error) {
+      console.error('Error getting pending registration requests:', error)
+      throw error
+    }
+  },
+
+  // Approve registration request
+  async approveRequest(requestId: string, reviewedBy: string): Promise<void> {
+    try {
+      const requestRef = doc(db, 'registrationRequests', requestId)
+      const requestDoc = await getDoc(requestRef)
+
+      if (!requestDoc.exists()) {
+        throw new Error('Registration request not found')
+      }
+
+      const requestData = requestDoc.data() as RegistrationRequest
+
+      // Check if email already exists
+      if (await accountService.emailExists(requestData.email)) {
+        throw new Error('An account with this email already exists.')
+      }
+
+      // Create the account
+      await accountService.createAccount({
+        firstName: requestData.firstName,
+        lastName: requestData.lastName,
+        email: requestData.email,
+        password: requestData.password,
+        role: requestData.role,
+      })
+
+      // Update request status
+      await updateDoc(requestRef, {
+        status: 'Approved',
+        reviewedAt: Timestamp.now(),
+        reviewedBy,
+        updatedAt: Timestamp.now(),
+      })
+    } catch (error) {
+      console.error('Error approving registration request:', error)
+      throw error
+    }
+  },
+
+  // Reject registration request
+  async rejectRequest(requestId: string, reviewedBy: string, reason?: string): Promise<void> {
+    try {
+      const requestRef = doc(db, 'registrationRequests', requestId)
+      await updateDoc(requestRef, {
+        status: 'Rejected',
+        reviewedAt: Timestamp.now(),
+        reviewedBy,
+        rejectionReason: reason || 'Registration request rejected by admin',
+        updatedAt: Timestamp.now(),
+      })
+    } catch (error) {
+      console.error('Error rejecting registration request:', error)
+      throw error
+    }
+  },
+
+  // Delete registration request
+  async deleteRequest(requestId: string): Promise<void> {
+    try {
+      const requestRef = doc(db, 'registrationRequests', requestId)
+      await deleteDoc(requestRef)
+    } catch (error) {
+      console.error('Error deleting registration request:', error)
       throw error
     }
   },

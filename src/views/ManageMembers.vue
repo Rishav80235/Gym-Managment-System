@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted } from 'vue'
-import { memberService, type Member } from '../firebase/services'
+import { memberService, notificationService, type Member } from '../firebase/services'
 
 // Map membership types from Firebase to display format
 const mapMembershipType = (type: string): 'Basic' | 'Premium' | 'Gold' | 'Platinum' => {
@@ -335,6 +335,57 @@ const toggleMemberStatus = async () => {
 
 const exportMembers = () => {
   alert('Exporting members list... (hook into report export logic)')
+}
+
+// Send reminder to member
+const isSendingReminder = ref(false)
+const sendReminder = async () => {
+  if (!selectedMember.value || !fullMemberData.value) return
+
+  isSendingReminder.value = true
+
+  try {
+    // Determine reminder type based on member status and dues
+    let notificationType: 'Payment Reminder' | 'Membership Expiry' | 'General' = 'General'
+    let title = 'Membership Reminder'
+    let message = ''
+
+    if (selectedMember.value.dues > 0) {
+      notificationType = 'Payment Reminder'
+      title = 'Payment Reminder'
+      message = `Dear ${selectedMember.value.firstName}, this is a friendly reminder that you have pending dues of ₹${selectedMember.value.dues.toLocaleString('en-IN')}. Please make the payment at your earliest convenience to continue enjoying our services.`
+    } else if (selectedMember.value.status === 'Expired') {
+      notificationType = 'Membership Expiry'
+      title = 'Membership Expired'
+      message = `Dear ${selectedMember.value.firstName}, your membership has expired. Please renew your membership to continue accessing our facilities.`
+    } else {
+      title = 'Membership Update'
+      message = `Dear ${selectedMember.value.firstName}, we hope you are enjoying your fitness journey with us! Keep up the great work!`
+    }
+
+    // Schedule notification for today
+    const today = new Date().toISOString().split('T')[0]
+    const currentTime = new Date().toTimeString().slice(0, 5)
+
+    await notificationService.createNotification({
+      title,
+      message,
+      type: notificationType,
+      targetType: 'Specific Member',
+      memberId: selectedMember.value.id,
+      memberName: `${selectedMember.value.firstName} ${selectedMember.value.lastName}`,
+      scheduledDate: today || '',
+      sendTime: currentTime,
+      isRecurring: false,
+    })
+
+    alert('Reminder sent successfully!')
+  } catch (error) {
+    console.error('Error sending reminder:', error)
+    alert('Failed to send reminder. Please try again.')
+  } finally {
+    isSendingReminder.value = false
+  }
 }
 </script>
 
@@ -701,7 +752,14 @@ const exportMembers = () => {
             >
               {{ selectedMember.status === 'Active' ? 'Set Inactive' : 'Set Active' }}
             </button>
-            <button type="button" class="btn primary">Send Reminder</button>
+            <button
+              type="button"
+              class="btn primary"
+              @click="sendReminder"
+              :disabled="isSendingReminder"
+            >
+              {{ isSendingReminder ? 'Sending...' : 'Send Reminder' }}
+            </button>
           </template>
           <template v-else>
             <button type="button" class="btn" @click="cancelEdit" :disabled="isUpdating">

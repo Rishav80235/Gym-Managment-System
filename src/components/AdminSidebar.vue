@@ -9,6 +9,7 @@ type NavItem = { label: string; routeName: string }
 const items: NavItem[] = [
   { label: 'Add Member', routeName: 'add-member' },
   { label: 'Update/Delete Members', routeName: 'manage-members' },
+  { label: 'Pending Registrations', routeName: 'pending-registrations' },
   { label: 'Create Bills', routeName: 'create-bills' },
   { label: 'Assign Fee Package', routeName: 'assign-fee' },
   { label: 'Assign Notification for monthly', routeName: 'monthly-notifications' },

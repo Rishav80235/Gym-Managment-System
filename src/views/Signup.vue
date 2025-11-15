@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { accountService } from '../firebase/services'
+import { accountService, registrationRequestService } from '../firebase/services'
 import type { AccountRole } from '../firebase/services'
 
 defineOptions({ name: 'SignupPage' })
@@ -45,19 +45,38 @@ const handleSignup = async () => {
   }
 
   try {
-    const { accountId } = await accountService.createAccount({
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      email: form.email.trim(),
-      password: form.password,
-      role: form.role,
-    })
+    // If admin, create account directly. Otherwise, create a registration request
+    if (form.role === 'admin') {
+      const { accountId } = await accountService.createAccount({
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.role,
+      })
 
-    success.value = `Account created successfully. Your ID is ${accountId}.`
+      success.value = `Account created successfully. Your ID is ${accountId}.`
 
-    setTimeout(() => {
-      router.push({ name: 'login', query: { created: '1', accountId } })
-    }, 800)
+      setTimeout(() => {
+        router.push({ name: 'login', query: { created: '1', accountId } })
+      }, 800)
+    } else {
+      // For member/user, create a registration request
+      await registrationRequestService.createRequest({
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.role,
+      })
+
+      success.value =
+        'Registration request submitted successfully! An admin will review your request and you will be notified once it is approved.'
+
+      setTimeout(() => {
+        router.push({ name: 'login', query: { requested: '1' } })
+      }, 2000)
+    }
   } catch (err) {
     if (err instanceof Error) {
       error.value = err.message
