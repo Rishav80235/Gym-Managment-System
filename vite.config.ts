@@ -15,7 +15,18 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vue-vendor': ['vue', 'vue-router'],
+          'firebase-vendor': ['firebase/app', 'firebase/firestore', 'firebase/storage'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
   },
 })

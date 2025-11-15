@@ -44,7 +44,7 @@ const confirmUpgrade = async () => {
   processing.value = false
   confirmation.value = `Package updated to ${selectedPackage.value
     .split('-')
-    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .map((word) => (word[0]?.toUpperCase() || '') + word.slice(1))
     .join(' ')} successfully.`
 }
 
@@ -62,7 +62,10 @@ const goBack = () => {
     <header class="page-header">
       <div>
         <h2>Upgrade Package</h2>
-        <p>Your current package: <strong>{{ currentPackage }}</strong>. Choose a new plan below.</p>
+        <p>
+          Your current package: <strong>{{ currentPackage }}</strong
+          >. Choose a new plan below.
+        </p>
       </div>
       <button class="ghost-btn" type="button" @click="goBack">Back to Profile</button>
     </header>
@@ -141,7 +144,10 @@ const goBack = () => {
   gap: 16px;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border 0.15s ease;
 }
 .package-card:hover {
   transform: translateY(-2px);
@@ -214,7 +220,9 @@ li {
   color: #fff;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .primary-btn:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -236,7 +244,9 @@ li {
   border: 1px solid rgba(37, 99, 235, 0.4);
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .ghost-btn:hover {
   transform: translateY(-1px);
@@ -258,4 +268,3 @@ li {
   }
 }
 </style>
-
