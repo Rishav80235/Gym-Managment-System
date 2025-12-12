@@ -23,7 +23,7 @@ import UserSearchRecords from '../views/UserSearchRecords.vue'
 import Login from '../views/Login.vue'
 import Signup from '../views/Signup.vue'
 import type { AccountRole } from '../firebase/services'
-import { getSession } from '../utils/auth'
+import { clearSession, getSession } from '../utils/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -178,8 +178,8 @@ const router = createRouter({
 
 const defaultRouteByRole: Record<AccountRole, string> = {
   admin: 'add-member',
-  member: 'member-dashboard',
-  user: 'user-home',
+  member: 'login',
+  user: 'login',
 }
 
 router.beforeEach((to, from, next) => {
@@ -187,6 +187,12 @@ router.beforeEach((to, from, next) => {
   const isPublic = Boolean(to.meta.allowAnonymous)
 
   if (!session && !isPublic) {
+    return next({ name: 'login', query: { redirect: to.fullPath } })
+  }
+
+  // Lock down access to admin accounts only. Any non-admin session is invalidated.
+  if (session && session.role !== 'admin') {
+    clearSession()
     return next({ name: 'login', query: { redirect: to.fullPath } })
   }
 

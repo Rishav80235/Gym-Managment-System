@@ -45,3 +45,9 @@ export const updateSession = (updates: Partial<AuthSession>) => {
   const next = { ...current, ...updates }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
 }
+
+// Clear all locally stored client data to ensure a fresh state on load
+export const resetClientState = () => {
+  if (!isBrowser()) return
+  localStorage.clear()
+}
